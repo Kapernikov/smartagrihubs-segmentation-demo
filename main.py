@@ -17,6 +17,8 @@ from utils.dir_processing import clean_folder, save_metadata
 from utils.plotting import write_dataset
 from sklearn.model_selection import train_test_split
 
+from omegaconf import OmegaConf
+
 def create_metadata(model_name):
     """ not necessary if we use mlflow """
     import datetime
@@ -35,33 +37,28 @@ def main():
     # Disabling logging
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-    with open('configs/env.yaml') as f:
-        model_env = yaml.load(f, Loader=yaml.FullLoader)
-    print(model_env)
+    # environment variables with paths
+    cfg_path = OmegaConf.load('configs/paths.yaml')
 
-    # categories_dict = {'background': 0, 'peanut': 1, 'cashew': 2}
-    categories_dict = generate_categories_dict(model_env['predictable_categories'])
-    categories = model_env['predictable_categories']
+    cfg = OmegaConf.load('configs/env.yaml')
+
+    categories = cfg.MODEL.categories
+    categories_dict = generate_categories_dict(categories)
     color_map = create_color_map(categories)
-    print('COLOR_MAP', color_map)
 
-    # read config paths
-    with open('configs/paths.yaml') as f:
-        paths = yaml.load(f, Loader=yaml.FullLoader)
-    print(paths)
-    newstr = model_env['desired_input_dimensions'].replace("(", "")
+    newstr = cfg.DATA.img_dims.replace("(", "")
     newstr = newstr.replace(")","")
     desired_input_dimensions = tuple(map(int, newstr.split(', ')))
 
     # == MODEL == #
-    if model_env['model_name'] == '': 
+    if cfg.MODEL.model_name == '': 
         model_name = namegen.gen(separator='_')
 
-        num_classes = len(model_env['predictable_categories'])+1
-        model = create_model(desired_input_dimensions, num_classes, model_env['filters'], model_env['hyperspec'], model_env['pca'])
+        num_classes = len(categories)+1
+        model = create_model(desired_input_dimensions, num_classes, cfg.TRAINING.filters, cfg.HYPERSPECTRAL.hyperspec, cfg.HYPERSPECTRAL.pca)
         model.summary()
     else:
-        model_name = model_env['model_name']
+        model_name = cfg.MODEL.model_name
 
         model = load_model(model_name)
 
@@ -69,30 +66,28 @@ def main():
 
         model.summary()
 
+    PATH_LOG = os.path.join(cfg_path.DIRS.history, model_name)  # store model log
+    PATH_RES = os.path.join(cfg_path.DIRS.results, model_name)  # store results
+
     metadata = create_metadata(model_name)
 
-    PATH_LOG = os.path.join(paths['history_directory_path'], model_name)  # store model log
-    PATH_RES = os.path.join(paths['results_directory_path'], model_name)  # store results
-
     # === DATASET LOADING AND PREPROCESSING === #
-    X, y = preprocess_data_from_images_dev(data_path=paths['cleaned_data_dir_path'], 
-                                           shape=desired_input_dimensions,
-                                           categories=model_env['predictable_categories'],
-                                           hspectral=[model_env['hyperspec'], model_env['pca']])
+    X, y = preprocess_data_from_images_dev(data_path = cfg_path.DIRS.data, 
+                                           shape = desired_input_dimensions,
+                                           categories=categories,
+                                           hspectral = [cfg.HYPERSPECTRAL.hyperspec, cfg.HYPERSPECTRAL.pca])
 
     #=== TRAIN/TEST SPLIT === #
-    test_size = 1.-model_env['train_test_split']
+    test_size = 1.- cfg.DATA.train_test_split
     X_train, X_test, y_train, y_test = train_test_split(X, y,
                                                         test_size=test_size,
                                                         shuffle=True,
-                                                        random_state=model_env['seed'])
-    #X_train, y_train = X[:int(model_env.train_test_split*len(X))], y[:int(model_env.train_test_split*len(y))]
-    #X_test, y_test = X[int(model_env.train_test_split*len(X)):], y[int(model_env.train_test_split*len(y)):]
+                                                        random_state=cfg.DATA.seed)
+
     print(f'Number of TRAIN images: {len(X_train)}')
     print(f'Number of TEST images: {len(X_test)}')
 
-
-    if model_env['train']:
+    if cfg.MODEL.train:
 
         print('Training mode')
 
@@ -108,7 +103,7 @@ def main():
         save_metadata(metadata, PATH_LOG)
         save_params(PATH_LOG)
     
-    if model_env['test']:
+    if cfg.MODEL.test:
 
         print('Inference mode')
 

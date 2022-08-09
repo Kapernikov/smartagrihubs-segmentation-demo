@@ -17,7 +17,9 @@ opencv-python = "~=4.5.5"
 namegenerator = "~=1.0.6"
 dvc = {extras = ["gdrive"], version = "*"}
 spectral = "~=0.22.4"
-
+jupyter = "*"
+ipykernel = "*"
+munch = "~=2.5.0"
 [dev-packages]
 
 [requires]

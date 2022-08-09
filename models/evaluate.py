@@ -7,6 +7,8 @@ import seaborn as sns
 import tensorflow as tf
 import yaml
 
+from omegaconf import OmegaConf
+
 matplotlib.use("Agg")
 
 # Pixel accuracy = the percent of pixels in your image that are classified correctly.
@@ -112,13 +114,10 @@ def get_confusion_indices(y_trues, y_preds, categories_dict, pixel_thres=1, mean
 
 def save_confusion_matrix(confusion_matrix,timestamp,class_name,class_counter=None):
  # read config paths
-    with open('configs/paths.yaml') as f:
-        paths = yaml.load(f, Loader=yaml.FullLoader)
+    cfg_path = OmegaConf.load('configs/paths.yaml')
+    cfg = OmegaConf.load('configs/env.yaml')
 
-    with open('configs/env.yaml') as f:
-        model_env = yaml.load(f, Loader=yaml.FullLoader)
-
-    tp,tn,fp,fn = confusion_matrix['tp'],confusion_matrix['tn'],confusion_matrix['fp'],confusion_matrix['fn']
+    tp,tn,fp,fn = confusion_matrix['tp'], confusion_matrix['tn'], confusion_matrix['fp'], confusion_matrix['fn']
                 
     positives = [tp,fp]
     negatives = [fn,tn]
@@ -138,18 +137,12 @@ def save_confusion_matrix(confusion_matrix,timestamp,class_name,class_counter=No
     ## Ticket labels - List must be in alphabetical order
     ax.xaxis.set_ticklabels(['True','False'])
     ax.yaxis.set_ticklabels(['True','False'])
-
-    # Save the figure
-    with_bg = ''
-    if model_env['use_non_annotated_images_test'] is True:
-        with_bg = '_with_bg'
     
-
-    confusion_matrices_path = os.path.join(paths['results_directory_path'],timestamp,'confusion_matrices')
+    confusion_matrices_path = os.path.join(cfg_path.DIRS.results, timestamp,'confusion_matrices')
     if not os.path.exists(confusion_matrices_path):
         os.makedirs(confusion_matrices_path)
 
-    path = os.path.join(confusion_matrices_path, 'conf_matrix_'+class_name+with_bg+'.png')
+    path = os.path.join(confusion_matrices_path, 'conf_matrix_'+class_name+'.png')
     if os.path.isfile(path):
        os.remove(path)
     plt.savefig(path, dpi=300)

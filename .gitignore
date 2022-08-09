@@ -5,3 +5,6 @@ utils/__pycache__
 processing/__pycache__
 models/__pycache__
 smartagrihubs.code-workspace
+.ipynb_checkpoints/
+models/architectures/__pycache__/
+models/train_test/__pycache__/

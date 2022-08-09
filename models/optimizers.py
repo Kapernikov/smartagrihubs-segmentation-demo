@@ -1,10 +1,9 @@
 import math
 import yaml
 
+from omegaconf import OmegaConf
+
 import tensorflow as tf
-
-#from configs.env import model_env
-
 
 def get_optimizer_by_name(opt_name,learning_rate):
     if opt_name == 'sgd':
@@ -29,24 +28,22 @@ def get_lr_scheduler_by_name(lr_scheduler_name):
         return None
 
 def lr_time_constant_decay(epoch,lr):
-    with open('configs/env.yaml') as f:
-        model_env = yaml.load(f, Loader=yaml.FullLoader)
-    decay = model_env['learning_rate']/model_env['num_epochs']
+    cfg = OmegaConf.load('configs/env.yaml')
+
+    decay = cfg.TRAINING.learning_rate/cfg.TRAINING.num_epochs
     learning_rate = lr - decay
     return round(learning_rate,6)
 
 # Dynamic learning rate
 def lr_time_based_decay(epoch, lr):
-    with open('configs/env.yaml') as f:
-        model_env = yaml.load(f, Loader=yaml.FullLoader)
-    decay = model_env['learning_rate']/model_env['num_epochs']
+    cfg = OmegaConf.load('configs/env.yaml')
+    decay = cfg.TRAINING.learning_rate/cfg.TRAINING.num_epochs
     learning_rate = lr * 1 / (1 + decay * epoch)
     return round(learning_rate,6)
 
 def lr_exp_decay(epoch, lr):
-    with open('configs/env.yaml') as f:
-        model_env = yaml.load(f, Loader=yaml.FullLoader)
-    decay = model_env['learning_rate']/model_env['num_epochs']
+    cfg = OmegaConf.load('configs/env.yaml')
+    decay = cfg.TRAINING.learning_rate/cfg.TRAINING.num_epochs
     learning_rate = lr * math.exp(-decay * epoch)
     return round(learning_rate,6)
 

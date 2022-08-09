@@ -7,6 +7,8 @@ from matplotlib import pyplot as plt, patches as mpatches
 
 from utils.plotting import write_image_cv
 
+from omegaconf import OmegaConf
+
 # Save history of training and validation
 def save_losses(history, path_log):
     print('Saving losses')
@@ -49,32 +51,26 @@ def save_model(model, path_log):
 # Save params
 def save_params(path_log):
     print('Saving model params')
-    with open('configs/env.yaml') as f:
-        model_env = yaml.load(f, Loader=yaml.FullLoader)
 
-    num_classes = len(model_env['predictable_categories'])+1  # classes + background
-    decay = model_env['learning_rate']/model_env['num_epochs']
+    cfg = OmegaConf.load('configs/env.yaml')
+
+    num_classes = len(cfg.MODEL.categories) + 1
+    decay = cfg.TRAINING.learning_rate/cfg.TRAINING.num_epochs
     params = {
-        'use_non_annotated_images_train': model_env['use_non_annotated_images_train'],
-        'use_non_annotated_images_test': model_env['use_non_annotated_images_test'],
         'num_classes': num_classes,
-        'desired_input_dimensions': model_env['desired_input_dimensions'],
-
-        'num_epochs': model_env['num_epochs'],
-        'batch_size': model_env['batch_size'],
-        'validation_split': model_env['validation_split'],
-        'verbose': model_env['verbose'],
-
-        'optimizer_name': model_env['optimizer_name'],
-        'learning_rate': model_env['learning_rate'],
-        'loss_name': model_env['loss_name'],
-        'metrics_name': model_env['metrics_name'],
-        'shuffle' :  model_env['shuffle'],
-        'decay' : decay,
-
-        'use_data_generator': model_env['use_data_generator'],
-        'seed': model_env['seed'],
-        'additional' : model_env['additional'],
+        'desired_input_dimensions': cfg.DATA.img_dims,
+        'seed': cfg.DATA.seed,
+        'use_data_generator': cfg.DATA.use_data_generator,
+        'num_epochs': cfg.TRAINING.num_epochs,
+        'batch_size': cfg.TRAINING.batch_size,
+        'validation_split': cfg.TRAINING.validation_split,
+        'verbose': cfg.TRAINING.verbose,
+        'optimizer_name': cfg.TRAINING.optimizer_name,
+        'learning_rate': cfg.TRAINING.learning_rate,
+        'loss_name': cfg.TRAINING.loss_name,
+        'metrics_name': cfg.TRAINING.metrics_name,
+        'shuffle':  cfg.TRAINING.shuffle,
+        'decay' : decay
     }
 
     with open(os.path.join(path_log, 'params.json'), 'w') as file:

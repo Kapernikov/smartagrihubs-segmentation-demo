@@ -11,26 +11,25 @@ import models.metrics as metrics
 import models.optimizers as optimizers
 from processing.preprocessing import samples_to_datagenerator
 
+from omegaconf import OmegaConf
 
 def train_model(model: Model, path_log: str, modelname: str, Xs: list, Ys: list):
 
-    with open('configs/paths.yaml') as f:
-        paths = yaml.load(f, Loader=yaml.FullLoader)
+    cfg_path = OmegaConf.load('configs/paths.yaml')
 
-    with open('configs/env.yaml') as f:
-        model_env = yaml.load(f, Loader=yaml.FullLoader)
+    cfg = OmegaConf.load('configs/env.yaml')
     
-    loss = losses.get_loss_fn_by_name(model_env['loss_name'])
+    loss = losses.get_loss_fn_by_name(cfg.TRAINING.loss_name)
     
     my_lr_scheduler = keras.callbacks.LearningRateScheduler(
         optimizers.lr_time_based_decay, verbose=1)
 
     optimizer = optimizers.get_optimizer_by_name(
-        model_env['optimizer_name'], model_env['learning_rate'])
+        cfg.TRAINING.optimizer_name, cfg.TRAINING.learning_rate)
     
-    num_classes = len(model_env['predictable_categories'])+1  # classes + background
+    num_classes = len(cfg.MODEL.categories) + 1
     mtrcs = metrics.get_metrics_by_name(
-        model_env['metrics_name'], num_classes)
+        cfg.TRAINING.metrics_name, num_classes)
 
     model.compile(optimizer=optimizer, loss=loss,
                   metrics=mtrcs, run_eagerly=True)
@@ -38,9 +37,9 @@ def train_model(model: Model, path_log: str, modelname: str, Xs: list, Ys: list)
     csv_logger = CSVLogger(os.path.join(
         path_log, 'log.csv'), append=True, separator=';')
 
-    print('use data generator', model_env['use_data_generator'])
+    print('use data generator', cfg.DATA.use_data_generator)
 
-    checkpoint_filepath = f"./{paths['history_directory_path']}/{modelname}"
+    checkpoint_filepath = f"./{cfg_path.DIRS.history}/{modelname}"
     os.makedirs(checkpoint_filepath, exist_ok=True)
     checkpoint_filepath += '/best_model.hdf5'
 
@@ -50,24 +49,25 @@ def train_model(model: Model, path_log: str, modelname: str, Xs: list, Ys: list)
                                                                 mode='max',
                                                                 save_best_only=True
                                                                 )
-    if not model_env['use_data_generator']:
+    if not cfg.DATA.use_data_generator:
         history = model.fit(
             x=Xs,
             y=Ys,
-            validation_split=model_env['validation_split'],
-            epochs=model_env['num_epochs'],
-            shuffle=model_env['shuffle'],
-            batch_size=model_env['batch_size'],
-            verbose=model_env['verbose'],
+            validation_split = cfg.TRAINING.validation_split,
+            epochs = cfg.TRAINING.num_epochs,
+            shuffle = cfg.TRAINING.shuffle,
+            batch_size = cfg.TRAINING.batch_size,
+            verbose = cfg.TRAINING.verbose,
             callbacks=[csv_logger, my_lr_scheduler, model_checkpoint_callback]
         )
 
     else:  # train model with generator
-        validation_split = model_env['validation_split']
-        batch_size = model_env['batch_size']
-        num_epochs = model_env['num_epochs']
-        verbose = model_env['verbose']
-        shuffle = model_env['shuffle']
+
+        validation_split = cfg.TRAINING.validation_split
+        batch_size = cfg.TRAINING.batch_size
+        num_epochs = cfg.TRAINING.num_epochs
+        verbose = cfg.TRAINING.verbose
+        shuffle = cfg.TRAINING.shuffle
 
         train_samples = Xs[:int(Xs.shape[0]*(1-validation_split))
                           ], Ys[:int(Ys.shape[0]*(1-validation_split))]
