@@ -37,9 +37,7 @@ def main():
     categories_dict = generate_categories_dict(categories)
     color_map = create_color_map(categories)
 
-    newstr = cfg.DATA.img_dims.replace("(", "")
-    newstr = newstr.replace(")","")
-    desired_input_dimensions = tuple(map(int, newstr.split(', ')))
+    desired_input_dimensions = eval(cfg.DATA.img_dims)
 
     # == MODEL == #
     if cfg.MODEL.model_name == '': 
