@@ -114,7 +114,7 @@ def get_confusion_indices(y_trues, y_preds, categories_dict, pixel_thres=1, mean
 
 def save_confusion_matrix(confusion_matrix,timestamp,class_name,class_counter=None):
  # read config paths
-    cfg_path = OmegaConf.load('configs/paths.yaml')
+
     cfg = OmegaConf.load('configs/env.yaml')
 
     tp,tn,fp,fn = confusion_matrix['tp'], confusion_matrix['tn'], confusion_matrix['fp'], confusion_matrix['fn']
@@ -138,7 +138,7 @@ def save_confusion_matrix(confusion_matrix,timestamp,class_name,class_counter=No
     ax.xaxis.set_ticklabels(['True','False'])
     ax.yaxis.set_ticklabels(['True','False'])
     
-    confusion_matrices_path = os.path.join(cfg_path.DIRS.results, timestamp,'confusion_matrices')
+    confusion_matrices_path = os.path.join(cfg.DIRS.results, timestamp,'confusion_matrices')
     if not os.path.exists(confusion_matrices_path):
         os.makedirs(confusion_matrices_path)
 

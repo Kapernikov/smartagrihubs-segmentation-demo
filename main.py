@@ -15,17 +15,10 @@ from processing.preprocessing import (preprocess_data_from_images_dev, generate_
 from utils.dir_processing import clean_folder, save_metadata
 
 from utils.plotting import write_dataset
+from utils.utils import create_metadata
 from sklearn.model_selection import train_test_split
 
 from omegaconf import OmegaConf
-
-def create_metadata(model_name):
-    """ not necessary if we use mlflow """
-    import datetime
-    metadata = {}
-    metadata['modelname'] = model_name
-    metadata['timestamp'] = datetime.datetime.now().isoformat()
-    return metadata
 
 def main():
 
@@ -37,9 +30,7 @@ def main():
     # Disabling logging
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-    # environment variables with paths
-    cfg_path = OmegaConf.load('configs/paths.yaml')
-
+    # environment variables
     cfg = OmegaConf.load('configs/env.yaml')
 
     categories = cfg.MODEL.categories
@@ -66,13 +57,13 @@ def main():
 
         model.summary()
 
-    PATH_LOG = os.path.join(cfg_path.DIRS.history, model_name)  # store model log
-    PATH_RES = os.path.join(cfg_path.DIRS.results, model_name)  # store results
+    PATH_LOG = os.path.join(cfg.DIRS.history, model_name)  # store model log
+    PATH_RES = os.path.join(cfg.DIRS.results, model_name)  # store results
 
     metadata = create_metadata(model_name)
 
     # === DATASET LOADING AND PREPROCESSING === #
-    X, y = preprocess_data_from_images_dev(data_path = cfg_path.DIRS.data, 
+    X, y = preprocess_data_from_images_dev(data_path = cfg.DIRS.data, 
                                            shape = desired_input_dimensions,
                                            categories=categories,
                                            hspectral = [cfg.HYPERSPECTRAL.hyperspec, cfg.HYPERSPECTRAL.pca])

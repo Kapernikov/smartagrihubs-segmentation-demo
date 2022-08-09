@@ -15,8 +15,6 @@ from omegaconf import OmegaConf
 
 def train_model(model: Model, path_log: str, modelname: str, Xs: list, Ys: list):
 
-    cfg_path = OmegaConf.load('configs/paths.yaml')
-
     cfg = OmegaConf.load('configs/env.yaml')
     
     loss = losses.get_loss_fn_by_name(cfg.TRAINING.loss_name)
@@ -39,7 +37,7 @@ def train_model(model: Model, path_log: str, modelname: str, Xs: list, Ys: list)
 
     print('use data generator', cfg.DATA.use_data_generator)
 
-    checkpoint_filepath = f"./{cfg_path.DIRS.history}/{modelname}"
+    checkpoint_filepath = f"./{cfg.DIRS.history}/{modelname}"
     os.makedirs(checkpoint_filepath, exist_ok=True)
     checkpoint_filepath += '/best_model.hdf5'
 

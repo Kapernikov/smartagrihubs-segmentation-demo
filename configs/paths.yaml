@@ -1,5 +1,0 @@
-# Project directories
-DIRS:
-  data: 'data'                 # dataset
-  history: 'models_versioning' # weights, architecture, etc.
-  results: 'results'           # loss, metrics and confusion matrices

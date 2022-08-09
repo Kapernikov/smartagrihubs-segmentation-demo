@@ -32,7 +32,7 @@ def lr_time_constant_decay(epoch,lr):
 
     decay = cfg.TRAINING.learning_rate/cfg.TRAINING.num_epochs
     learning_rate = lr - decay
-    return round(learning_rate,6)
+    return round(learning_rate, 6)
 
 # Dynamic learning rate
 def lr_time_based_decay(epoch, lr):
