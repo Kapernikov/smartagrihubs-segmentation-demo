@@ -1,0 +1,19 @@
+# Project directories
+raw_data_dir_path: 'data/raw'
+cleaned_data_dir_path: 'data/halcon-dataset'
+
+non_annotated_dir_name: 'non_annotated_clusters'
+
+# Saving the model ( weights, architecture, etc.)
+history_directory_path: 'models_versioning'
+
+# Plots of the loss/metrics during training and validation ( + confusion matrices if testing )
+results_directory_path: 'results'
+
+tuning_directory_path: 'tuning'
+
+# Paths
+#annotations_dir_path: '{}\\annotations'.format(raw_data_dir_path)
+#images_dir_path: '{}\\images'.format(raw_data_dir_path)
+
+

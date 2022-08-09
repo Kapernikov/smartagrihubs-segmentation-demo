@@ -1,0 +1,14 @@
+numpy~=1.22.4
+scikit-image~=0.19.2
+scikit-learn~=1.1.1
+tensorflow~=2.8.0
+keras~=2.8.0
+pycocotools~=2.0.4
+matplotlib~=3.4.3
+seaborn~=0.11.2
+pandas~=1.3.0
+opencv-python~=4.5.5
+namegenerator~=1.0.6
+dvc~=2.11.0
+dvc[gdrive]
+spectral~=0.22.4
