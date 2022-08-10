@@ -2,7 +2,7 @@
 
 This project is an implementation of the U-Net architecture for defect detection using semantic segmentation.
 
-![predictions example](models_versioning/whiny_red_mastiff/prediction_example.png)
+![predictions example](models_versioning/whiny_red_mastiff/example.png)
 
 Table of contents
 =================
