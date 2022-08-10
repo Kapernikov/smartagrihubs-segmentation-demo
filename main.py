@@ -1,24 +1,26 @@
 import os
-import cv2 as cv
-import numpy as np
-import namegenerator as namegen
 import tensorflow as tf
-import yaml
-
-from models import evaluate
-from models.model_functions import create_model, load_model
-from models.saving import (load_params, save_losses, save_model, save_params, save_predictions)
-from models.train_test.test import test_model
-from models.train_test.train import train_model
-from processing.postprocessing import encode_masks_to_rgb, create_color_map
-from processing.preprocessing import (preprocess_data_from_images_dev, generate_categories_dict)
-from utils.dir_processing import clean_folder, save_metadata
-
-from utils.plotting import write_dataset
-from utils.utils import create_metadata
-from sklearn.model_selection import train_test_split
+import namegenerator as namegen
 
 from omegaconf import OmegaConf
+
+from models.model_functions import create_model, load_model
+from models.train_test.train import train_model
+from models.saving import (load_params, save_losses, save_model, save_params)
+from utils.utils import (create_metadata, save_metadata, create_color_map, create_category_dict)
+
+from processing.preprocessing import preprocess_data_from_images
+from processing.postprocessing import encode_masks_to_rgb
+from sklearn.model_selection import train_test_split
+
+from utils.dir_processing import clean_folder
+from utils.utils import create_color_map, create_category_dict
+
+from models import evaluate
+from models.train_test.test import test_model
+from models.saving import save_predictions
+
+from sklearn.model_selection import train_test_split
 
 def main():
 
@@ -30,47 +32,44 @@ def main():
     # Disabling logging
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-    # environment variables
+    # load environment variables
     cfg = OmegaConf.load('configs/env.yaml')
 
-    categories = cfg.MODEL.categories
-    categories_dict = generate_categories_dict(categories)
-    color_map = create_color_map(categories)
+    # used for inference only
+    categ_dict = create_category_dict(cfg.MODEL.categories)
+    color_map = create_color_map(cfg.MODEL.categories)
 
-    desired_input_dimensions = eval(cfg.DATA.img_dims)
+    print('Class categories', categ_dict)
 
-    # == MODEL == #
+    num_classes = len(cfg.MODEL.categories) + 1
+
     if cfg.MODEL.model_name == '': 
+        # generate a new model name
         model_name = namegen.gen(separator='_')
 
-        num_classes = len(categories)+1
-        model = create_model(desired_input_dimensions, num_classes, cfg.TRAINING.filters, cfg.HYPERSPECTRAL.hyperspec, cfg.HYPERSPECTRAL.pca)
-        model.summary()
+        model = create_model(eval(cfg.DATA.img_dims), num_classes, cfg.TRAINING.filters)
     else:
+        # use existing model with its proper name
         model_name = cfg.MODEL.model_name
 
         model = load_model(model_name)
-
         load_params(model_name)
 
-        model.summary()
-
-    PATH_LOG = os.path.join(cfg.DIRS.history, model_name)  # store model log
-    PATH_RES = os.path.join(cfg.DIRS.results, model_name)  # store results
-
+    print(f'Model name is {model_name}')    
+    
     metadata = create_metadata(model_name)
 
+    model.summary()
+
     # === DATASET LOADING AND PREPROCESSING === #
-    X, y = preprocess_data_from_images_dev(data_path = cfg.DIRS.data, 
-                                           shape = desired_input_dimensions,
-                                           categories=categories,
-                                           hspectral = [cfg.HYPERSPECTRAL.hyperspec, cfg.HYPERSPECTRAL.pca])
+    X, y = preprocess_data_from_images(data_path = cfg.DIRS.data, 
+                                       shape = eval(cfg.DATA.img_dims),
+                                       categories = cfg.MODEL.categories)
 
     #=== TRAIN/TEST SPLIT === #
-    test_size = 1.- cfg.DATA.train_test_split
     X_train, X_test, y_train, y_test = train_test_split(X, y,
-                                                        test_size=test_size,
-                                                        shuffle=True,
+                                                        test_size=cfg.DATA.test_split,
+                                                        shuffle=cfg.TRAINING.shuffle,
                                                         random_state=cfg.DATA.seed)
 
     print(f'Number of TRAIN images: {len(X_train)}')
@@ -80,44 +79,44 @@ def main():
 
         print('Training mode')
 
-        os.makedirs(PATH_LOG, exist_ok=True)
-        os.makedirs(os.path.join(PATH_RES, model_name), exist_ok=True)
-        
         # == TRAINING == #
-        history = train_model(model, PATH_RES, model_name, Xs=X_train, Ys=y_train)
-        
+        history = train_model(model, model_name, Xs=X_train, Ys=y_train, cfg=cfg)
+
         # == Saving model informations == #
-        save_losses(history, PATH_RES)
+        PATH_RESULTS = os.path.join(cfg.DIRS.results, model_name)
+        PATH_LOG = os.path.join(cfg.DIRS.history, model_name)
+
+        os.makedirs(PATH_LOG, exist_ok=True)
+
+        save_losses(history, PATH_RESULTS)
         save_model(model, PATH_LOG)
         save_metadata(metadata, PATH_LOG)
-        save_params(PATH_LOG)
+        save_params(PATH_LOG, cfg)
     
     if cfg.MODEL.test:
 
         print('Inference mode')
 
         # == INFERENCE == #
-        y_pred = test_model(model, X_test, prediction_threshold=0.8)
-        #write_dataset(X_test, predictions)
+        y_pred = test_model(model, X_test, prediction_threshold = cfg.TRAINING.prediction_threshold)
 
         # == Confusion matrices == #
         confusion_classes, imgs_labels = evaluate.get_confusion_indices(y_test,
                                                                         y_pred,
-                                                                        categories_dict=categories_dict,
-                                                                        pixel_thres=10,
-                                                                        meanIoU_threshold=0.7)            
+                                                                        categories_dict = categ_dict,
+                                                                        pixel_thres = cfg.TRAINING.pixel_threshold,
+                                                                        meanIoU_threshold = cfg.TRAINING.iou_threshold)            
             
-        for class_name,confusion_matrix in confusion_classes.items():        
-            evaluate.save_confusion_matrix(confusion_matrix, model_name, class_name, class_counter=None)
-
-        clean_folder(PATH_RES)
-
         # encode ground truth and prediction masks
         y_test_en, y_pred_en = encode_masks_to_rgb(y_test, y_pred, color_map)
+
+        PATH_RESULTS = os.path.join(cfg.DIRS.results, model_name)
+        clean_folder(PATH_RESULTS)
+
         save_predictions(X_test, 
                          y_test_en,
                          y_pred_en,
-                         PATH_RES,
+                         PATH_RESULTS,
                          imgs_labels,
                          confusion_classes,
                          color_map)
