@@ -1,6 +1,5 @@
 data/
 results/
-models_versioning/
 utils/__pycache__
 processing/__pycache__
 models/__pycache__

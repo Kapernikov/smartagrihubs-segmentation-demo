@@ -1,0 +1,1 @@
+{"num_classes": 2, "desired_input_dimensions": "(256, 256)", "seed": 99, "use_data_generator": false, "num_epochs": 100, "batch_size": 16, "validation_split": 0.4, "verbose": 1, "optimizer_name": "sgd", "learning_rate": 0.1, "loss_name": "focal_tversky_loss", "metrics_name": "OneHotMeanIoU", "shuffle": true, "decay": 0.001}
