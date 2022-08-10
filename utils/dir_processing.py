@@ -122,8 +122,3 @@ def clean_folder(base_path):
     if os.path.isdir(path):
         shutil.rmtree(path)
 
-def save_metadata(data, path):
-    """ write metadata file into JSON file """
-    with open(os.path.join(path, 'metadata.json'), 'w') as f:
-        json.dump(data, f)
-

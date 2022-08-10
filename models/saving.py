@@ -11,6 +11,8 @@ from omegaconf import OmegaConf
 
 # Save history of training and validation
 def save_losses(history, path_log):
+    """ """
+    
     print('Saving losses')
     keys = list(history.history.keys())
     loss_keys,val_loss_keys = keys[:(len(keys)//2)],keys[(len(keys)//2):]
@@ -35,6 +37,7 @@ def save_losses(history, path_log):
 
 # Saving model informations ( summary, model to JSON, weights, env.py )
 def save_model(model, path_log):
+    """ """
     print('Saving model summary and weights')
 
     # Saving model summary
@@ -49,10 +52,9 @@ def save_model(model, path_log):
     model.save_weights(os.path.join(path_log, 'model.h5'))
 
 # Save params
-def save_params(path_log):
+def save_params(path_log, cfg):
+    """ """
     print('Saving model params')
-
-    cfg = OmegaConf.load('configs/env.yaml')
 
     num_classes = len(cfg.MODEL.categories) + 1
     decay = cfg.TRAINING.learning_rate/cfg.TRAINING.num_epochs
@@ -77,6 +79,7 @@ def save_params(path_log):
         json.dump(params, file)
 
 def load_params(timestamp):
+    """ """
     with open('configs/paths.yaml') as f:
         paths = yaml.load(f, Loader=yaml.FullLoader)
 
@@ -153,8 +156,6 @@ def save_predictions(X, gts_2RGB, preds_2RGB, path_log, confusion_results, confu
     # Show each image with its prediction and ground truth
     for i, (y, prediction, image, confusion_result) in enumerate(zip(gts_2RGB, preds_2RGB, X, confusion_results)):
         img_name = f'img_pred_{i}.png'
-        #img_name = f'img_pred_class_0-' + confusion_result[0] + '_class_1-' + confusion_result[1] + '_'+ str(i) +'.png'
-        #path = os.path.join(base_path, img_name)
         for j, label in enumerate(labels):
             path = os.path.join(base_path, label, confusion_result[j], img_name)
             #print(image[:,:,:3].shape)
