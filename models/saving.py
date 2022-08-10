@@ -78,13 +78,9 @@ def save_params(path_log, cfg):
     with open(os.path.join(path_log, 'params.json'), 'w') as file:
         json.dump(params, file)
 
-def load_params(timestamp):
+def load_params(model_name, cfg):
     """ """
-    with open('configs/paths.yaml') as f:
-        paths = yaml.load(f, Loader=yaml.FullLoader)
-
-    path = os.path.join(paths['history_directory_path'],
-                        timestamp, 'params.json')
+    path = os.path.join(cfg.DIRS.history, model_name, 'params.json')
     print('Loading parameters')
 
     with open(path) as json_file:
